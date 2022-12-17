@@ -58,7 +58,6 @@ ROS2:
 ros2 launch simple_image_recon node.launch.py camera:=event_camera
 ros2 run rqt_image_view rqt_image_view
 ```
-```
 
 Parameters:
 

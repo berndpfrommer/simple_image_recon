@@ -1,0 +1,14 @@
+<launch>
+  <arg name="camera" default="/event_camera"/>
+  <arg name="topic" default="events"/>
+  <arg name="fps" default="25.0"/>
+  <arg name="cutoff_num_events" default="7"/>
+  <node pkg="simple_image_recon" ns="$(arg camera)" type="approx_reconstruction_node" name="approx_reconstruction" clear_params="true"
+	output="screen">
+    <param name="fps" value="$(arg fps)"/>
+    <param name="fill_ratio" value="0.5"/>
+    <param name="tile_size" value="2"/>
+    <param name="cutoff_num_events" value="$(arg cutoff_num_events)"/>
+    <remap from="~events" to="$(arg topic)"/>
+  </node>
+</launch>

@@ -1,0 +1,9 @@
+<library path="lib/libapprox_reconstruction_nodelet">
+  <class name="simple_image_recon/ApproxReconstructionNodelet"
+         type="simple_image_recon::ApproxReconstructionNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      nodelet for approximate event reconstruction
+    </description>
+  </class>
+</library>

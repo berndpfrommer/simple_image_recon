@@ -16,7 +16,7 @@ jobs:
   build_focal_galactic:
     runs-on: ubuntu-20.04
     container:
-      image: berndpfrommer/focal_noetic_galactic_metavision
+      image: berndpfrommer/focal_galactic
     name: focal/galactic (x86_64)
     steps:
       - name: check out github repo
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-20.04
     name: focal/noetic (x86_64)
     container:
-      image: berndpfrommer/focal_noetic_galactic_metavision
+      image: berndpfrommer/focal_noetic
     steps:
       - name: check out github repo
         uses: actions/checkout@v3

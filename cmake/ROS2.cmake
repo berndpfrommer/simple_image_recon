@@ -1,5 +1,5 @@
 # -*- cmake -*-
-# Copyright 2022 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+# Copyright 2023 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
 
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+
 #
 # --------- library
 #

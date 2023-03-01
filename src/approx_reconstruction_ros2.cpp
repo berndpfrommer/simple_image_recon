@@ -92,8 +92,8 @@ void ApproxReconstruction::eventMsg(EventArray::ConstSharedPtr msg)
   reconstructor_->processMsg(msg);
 }
 
-void ApproxReconstruction::frame(const sensor_msgs::msg::Image::ConstSharedPtr & img,
-                                 const std::string &)
+void ApproxReconstruction::frame(
+  const sensor_msgs::msg::Image::ConstSharedPtr & img, const std::string &)
 {
   imagePub_.publish(std::move(img));
 }

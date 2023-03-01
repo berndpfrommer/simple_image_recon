@@ -26,7 +26,7 @@ public:
   virtual void frame(
     const sensor_msgs::msg::Image::ConstSharedPtr & img,
     const std::string & topic) = 0;
-  virtual ~FrameHandler(){};
+  virtual ~FrameHandler() {}
 };
 }  // namespace simple_image_recon
 #endif  // SIMPLE_IMAGE_RECON__FRAME_HANDLER_ROS2_HPP_

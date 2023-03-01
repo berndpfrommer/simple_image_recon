@@ -32,9 +32,13 @@ ApproxReconstruction::ApproxReconstruction(const rclcpp::NodeOptions & options)
   double fps;
   this->get_parameter_or("fps", fps, 25.0);
   sliceInterval_ = static_cast<uint64_t>(1000000000 / std::abs(fps));
-  this->get_parameter_or("cutoff_num_events", cutoffNumEvents_, 7);
-  this->get_parameter_or("fill_ratio", fillRatio_, 0.5);
+  this->get_parameter_or("cutoff_num_events", cutoffNumEvents_, 30);
+  RCLCPP_INFO_STREAM(
+    get_logger(), "cutoff number events: " << cutoffNumEvents_);
+  this->get_parameter_or("fill_ratio", fillRatio_, 0.6);
+  RCLCPP_INFO_STREAM(get_logger(), "fill ratio: " << fillRatio_);
   this->get_parameter_or("tile_size", tileSize_, 2);
+  RCLCPP_INFO_STREAM(get_logger(), "tile size: " << tileSize_);
 
   imageMsgTemplate_.height = 0;
   const rmw_qos_profile_t qosProf = rmw_qos_profile_default;

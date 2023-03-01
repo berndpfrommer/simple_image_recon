@@ -41,7 +41,7 @@ public:
   inline void eventCD(
     uint64_t t, uint16_t ex, uint16_t ey, uint8_t polarity) override
   {
-    simpleReconstructor_.event(ex, ey, polarity);
+    simpleReconstructor_.event(t, ex, ey, polarity);
     while (t > nextFrameTime_) {
       publishFrame();
       nextFrameTime_ += sliceInterval_;

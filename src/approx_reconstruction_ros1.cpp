@@ -25,8 +25,9 @@ ApproxReconstruction::ApproxReconstruction(ros::NodeHandle & nh) : nh_(nh)
 {
   const double fps = nh_.param<double>("fps", 25.0);
   sliceInterval_ = static_cast<uint64_t>(1000000000 / std::abs(fps));
-  cutoffNumEvents_ = nh_.param<int>("cutoff_num_events", 7);
-  fillRatio_ = nh_.param<double>("tile_size", 2);
+  cutoffNumEvents_ = nh_.param<int>("cutoff_num_events", 30);
+  fillRatio_ = nh_.param<double>("fill_ratio", 0.6);
+  tileSize_ = nh_.param<int>("tile_size", 2);
 
   imageMsgTemplate_.height = 0;
   image_transport::ImageTransport it(nh_);

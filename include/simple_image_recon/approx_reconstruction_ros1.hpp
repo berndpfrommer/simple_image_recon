@@ -40,7 +40,7 @@ public:
   inline void eventCD(
     uint64_t t, uint16_t ex, uint16_t ey, uint8_t polarity) override
   {
-    simpleReconstructor_.event(ex, ey, polarity);
+    simpleReconstructor_.event(t, ex, ey, polarity);
     while (t > nextFrameTime_) {
       publishFrame();
       nextFrameTime_ += sliceInterval_;
@@ -84,7 +84,7 @@ private:
   bool isSubscribedToEvents_{false};
   image_transport::Publisher imagePub_;
   sensor_msgs::Image imageMsgTemplate_;
-  int cutoffNumEvents_{7};
+  int cutoffNumEvents_{30};
   uint64_t sliceInterval_{0};
   uint64_t nextFrameTime_{0};
   int tileSize_{2};

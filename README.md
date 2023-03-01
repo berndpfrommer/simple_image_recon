@@ -59,6 +59,17 @@ ros2 launch simple_image_recon node.launch.py camera:=event_camera
 ros2 run rqt_image_view rqt_image_view
 ```
 
+## Convert bag to images
+
+You can convert events from a bag directly into images. Run
+``bag_to_frames`` with ``-h`` for documentation. It can also convert
+synchronized events from multiple event cameras into synchronized frames.
+
+ROS2:
+```
+ros2 run simple_image_recon bag_to_frames -i input_bag -o output_bag -t /event_cam_0/events -t /event_cam_1/events -f 5.0
+```
+
 Parameters:
 
 - ``fps`` Frequency (in hz) at which images are emitted. Default: 25.

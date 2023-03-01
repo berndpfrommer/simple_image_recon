@@ -31,16 +31,20 @@ ApproxReconstruction::ApproxReconstruction(const rclcpp::NodeOptions & options)
 {
   double fps;
   this->get_parameter_or("fps", fps, 25.0);
-  sliceInterval_ = static_cast<uint64_t>(1000000000 / std::abs(fps));
-  this->get_parameter_or("cutoff_num_events", cutoffNumEvents_, 30);
-  RCLCPP_INFO_STREAM(
-    get_logger(), "cutoff number events: " << cutoffNumEvents_);
-  this->get_parameter_or("fill_ratio", fillRatio_, 0.6);
-  RCLCPP_INFO_STREAM(get_logger(), "fill ratio: " << fillRatio_);
-  this->get_parameter_or("tile_size", tileSize_, 2);
-  RCLCPP_INFO_STREAM(get_logger(), "tile size: " << tileSize_);
+  int cutoffNumEvents{30};
+  this->get_parameter_or("cutoff_num_events", cutoffNumEvents, 30);
 
-  imageMsgTemplate_.height = 0;
+  RCLCPP_INFO_STREAM(get_logger(), "cutoff number events: " << cutoffNumEvents);
+  double fillRatio{0.6};
+  this->get_parameter_or("fill_ratio", fillRatio, 0.6);
+  RCLCPP_INFO_STREAM(get_logger(), "fill ratio: " << fillRatio);
+  int tileSize{2};
+  this->get_parameter_or("tile_size", tileSize, 2);
+  RCLCPP_INFO_STREAM(get_logger(), "tile size: " << tileSize);
+
+  reconstructor_ = std::make_unique<ApproxReconstructor>(
+    this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize);
+
   const rmw_qos_profile_t qosProf = rmw_qos_profile_default;
   imagePub_ = image_transport::create_publisher(this, "~/image_raw", qosProf);
   // Since the ROS2 image transport does not call back when subscribers come and go
@@ -85,44 +89,13 @@ void ApproxReconstruction::subscriptionCheckTimerExpired()
 
 void ApproxReconstruction::eventMsg(EventArray::ConstSharedPtr msg)
 {
-  if (imageMsgTemplate_.height == 0) {
-    imageMsgTemplate_.header = msg->header;
-    imageMsgTemplate_.width = msg->width;
-    imageMsgTemplate_.height = msg->height;
-    imageMsgTemplate_.encoding = "mono8";
-    imageMsgTemplate_.is_bigendian = check_endian::isBigEndian();
-    imageMsgTemplate_.step = imageMsgTemplate_.width;
-    imageMsgTemplate_.data.resize(msg->width * msg->height, 0);
-    FirstMsgProcessor firstMsgProcessor;
-    event_array_codecs::DecoderFactory<FirstMsgProcessor> firstFactory;
-    auto firstDecoder =
-      firstFactory.getInstance(msg->encoding, msg->width, msg->height);
-    firstDecoder->decode(
-      &(msg->events[0]), msg->events.size(), &firstMsgProcessor);
-    const uint64_t t0 = firstMsgProcessor.getFirstTimeStamp();
-    nextFrameTime_ = (t0 / sliceInterval_) * sliceInterval_;
-    simpleReconstructor_.initialize(
-      msg->width, msg->height,
-      static_cast<uint32_t>(std::abs(cutoffNumEvents_)), tileSize_, fillRatio_);
-    decoder_ =
-      decoderFactory_.getInstance(msg->encoding, msg->width, msg->height);
-    if (!decoder_) {
-      RCLCPP_ERROR_STREAM(
-        this->get_logger(), "invalid encoding: " << msg->encoding);
-      throw std::runtime_error("invalid encoding!");
-    }
-  }
-  decoder_->decode(&(msg->events[0]), msg->events.size(), this);
+  reconstructor_->processMsg(msg);
 }
 
-void ApproxReconstruction::publishFrame()
+void ApproxReconstruction::frame(const sensor_msgs::msg::Image::ConstSharedPtr & img,
+                                 const std::string &)
 {
-  simpleReconstructor_.getImage(
-    &imageMsgTemplate_.data[0], imageMsgTemplate_.step);
-  auto msg = std::make_unique<sensor_msgs::msg::Image>(imageMsgTemplate_);
-  msg->header.stamp =
-    rclcpp::Time(nextFrameTime_, this->get_clock()->get_clock_type());
-  imagePub_.publish(std::move(msg));
+  imagePub_.publish(std::move(img));
 }
 
 }  // namespace simple_image_recon

@@ -14,10 +14,10 @@
 // limitations under the License.
 
 #include <event_array_msgs/EventArray.h>
-#include <sensor_msgs/Image.h>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
+#include <sensor_msgs/Image.h>
 #include <unistd.h>
 
 #include <memory>
@@ -156,9 +156,6 @@ int main(int argc, char ** argv)
       auto m = msg.instantiate<EventArray>();
       it->second.processMsg(m);
       numMessages++;
-      if (numMessages > 1000) {
-        break;
-      }
     }
   }
   std::cout << "processed " << numMessages << " number of messages"

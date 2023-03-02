@@ -40,7 +40,7 @@ ApproxReconstruction::ApproxReconstruction(const rclcpp::NodeOptions & options)
   this->get_parameter_or("tile_size", tileSize, 2);
   RCLCPP_INFO_STREAM(get_logger(), "tile size: " << tileSize);
 
-  reconstructor_ = std::make_unique<ApproxReconstructor>(
+  reconstructor_ = std::make_unique<ApproxRecon>(
     this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize);
 
   const rmw_qos_profile_t qosProf = rmw_qos_profile_default;
@@ -83,17 +83,6 @@ void ApproxReconstruction::subscriptionCheckTimerExpired()
       eventSub_.reset();
     }
   }
-}
-
-void ApproxReconstruction::eventMsg(EventArray::ConstSharedPtr msg)
-{
-  reconstructor_->processMsg(msg);
-}
-
-void ApproxReconstruction::frame(
-  const sensor_msgs::msg::Image::ConstSharedPtr & img, const std::string &)
-{
-  imagePub_.publish(std::move(img));
 }
 
 }  // namespace simple_image_recon

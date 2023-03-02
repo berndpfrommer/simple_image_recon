@@ -34,8 +34,7 @@ set(CMAKE_CXX_STANDARD 17)
 # --------- library
 #
 add_library(approx_reconstruction
-  src/approx_reconstruction_ros2.cpp
-  src/approx_reconstructor_ros2.cpp)
+  src/approx_reconstruction_ros2.cpp)
 target_include_directories(
     approx_reconstruction
   PUBLIC
@@ -58,7 +57,7 @@ target_link_libraries(approx_reconstruction_node approx_reconstruction)
 #
 # -------- bag_to_frames
 #
-add_executable(bag_to_frames src/bag_to_frames_ros2.cpp src/approx_reconstructor_ros2.cpp)
+add_executable(bag_to_frames src/bag_to_frames_ros2.cpp)
 target_include_directories(bag_to_frames PUBLIC include)
 ament_target_dependencies(bag_to_frames
   event_array_codecs event_array_msgs rosbag2_cpp sensor_msgs)

@@ -26,9 +26,10 @@
 #include <rosbag2_cpp/writer.hpp>
 #include <rosbag2_cpp/writers/sequential_writer.hpp>
 #include <rosbag2_storage/serialized_bag_message.hpp>
+#include <sensor_msgs/msg/image.hpp>
 
-#include "simple_image_recon/approx_reconstructor_ros2.hpp"
-#include "simple_image_recon/frame_handler_ros2.hpp"
+#include "simple_image_recon/approx_reconstructor.hpp"
+#include "simple_image_recon/frame_handler.hpp"
 
 using event_array_msgs::msg::EventArray;
 using sensor_msgs::msg::Image;
@@ -41,7 +42,8 @@ void usage()
             << std::endl;
 }
 
-class OutBagWriter : public simple_image_recon::FrameHandler
+class OutBagWriter
+: public simple_image_recon::FrameHandler<Image::ConstSharedPtr>
 {
 public:
   explicit OutBagWriter(
@@ -65,6 +67,8 @@ public:
     writer_->write(
       serialized_msg, topic, "sensor_msgs/msg/Image",
       rclcpp::Time(img->header.stamp));
+    // std::cout << topic << " "
+    // << rclcpp::Time(img->header.stamp).nanoseconds() << std::endl;
     numFrames_++;
     if (numFrames_ % 100 == 0) {
       std::cout << "wrote " << numFrames_ << " frames " << std::endl;
@@ -76,7 +80,8 @@ private:
   size_t numFrames_{0};
 };
 
-using simple_image_recon::ApproxReconstructor;
+using ApproxRecon = simple_image_recon::ApproxReconstructor<
+  EventArray, EventArray::ConstSharedPtr, Image, Image::ConstSharedPtr>;
 
 int main(int argc, char ** argv)
 {
@@ -154,11 +159,11 @@ int main(int argc, char ** argv)
   const double fillRatio = 0.6;
   const int tileSize = 2;
   OutBagWriter writer(outBagName, outTopics);
-  std::unordered_map<std::string, ApproxReconstructor> recons;
+  std::unordered_map<std::string, ApproxRecon> recons;
   for (size_t i = 0; i < inTopics.size(); i++) {
     recons.insert(
       {inTopics[i],
-       ApproxReconstructor(
+       ApproxRecon(
          &writer, outTopics[i], cutoff_period, fps, fillRatio, tileSize)});
   }
 
@@ -175,6 +180,9 @@ int main(int argc, char ** argv)
       serialization.deserialize_message(&serializedMsg, m.get());
       it->second.processMsg(m);
       numMessages++;
+      if (numMessages > 1000) {
+        break;
+      }
     }
   }
   std::cout << "processed " << numMessages << " number of messages"

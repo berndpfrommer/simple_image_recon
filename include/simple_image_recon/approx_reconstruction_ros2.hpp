@@ -32,25 +32,34 @@
 namespace simple_image_recon
 {
 class ApproxReconstruction : public rclcpp::Node,
-                             public simple_image_recon::FrameHandler
+                             public simple_image_recon::FrameHandler<
+                               sensor_msgs::msg::Image::ConstSharedPtr>
 {
 public:
   using EventArray = event_array_msgs::msg::EventArray;
+  using Image = sensor_msgs::msg::Image;
   explicit ApproxReconstruction(const rclcpp::NodeOptions & options);
   ~ApproxReconstruction();
 
-  void frame(
-    const sensor_msgs::msg::Image::ConstSharedPtr & img,
-    const std::string & topic) override;
+  void frame(const Image::ConstSharedPtr & img, const std::string &) override
+  {
+    imagePub_.publish(std::move(img));
+  }
 
 private:
   void subscriptionCheckTimerExpired();
-  void eventMsg(EventArray::ConstSharedPtr msg);
+  void eventMsg(EventArray::ConstSharedPtr msg)
+  {
+    reconstructor_->processMsg(msg);
+  }
   // ------------------------  variables ------------------------------
+  using ApproxRecon = ApproxReconstructor<
+    EventArray, EventArray::ConstSharedPtr, Image, Image::ConstSharedPtr>;
+
   rclcpp::TimerBase::SharedPtr subscriptionCheckTimer_;
-  rclcpp::Subscription<event_array_msgs::msg::EventArray>::SharedPtr eventSub_;
+  rclcpp::Subscription<EventArray>::SharedPtr eventSub_;
   image_transport::Publisher imagePub_;
-  std::unique_ptr<ApproxReconstructor> reconstructor_;
+  std::unique_ptr<ApproxRecon> reconstructor_;
 };
 }  // namespace simple_image_recon
 #endif  // SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTION_ROS2_HPP_

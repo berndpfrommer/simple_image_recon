@@ -62,9 +62,9 @@ public:
     const sensor_msgs::msg::Image::ConstSharedPtr & img,
     const std::string & topic) override
   {
-    rclcpp::SerializedMessage serialized_msg;
+    auto serialized_msg = std::make_shared<rclcpp::SerializedMessage>();
     rclcpp::Serialization<Image> serialization;
-    serialization.serialize_message(img.get(), &serialized_msg);
+    serialization.serialize_message(img.get(), serialized_msg.get());
     writer_->write(
       serialized_msg, topic, "sensor_msgs/msg/Image",
       rclcpp::Time(img->header.stamp));
@@ -147,7 +147,7 @@ int main(int argc, char ** argv)
     return (-1);
   }
   if (outTopics.empty()) {
-    for (const auto s : inTopics) {
+    for (const auto & s : inTopics) {
       outTopics.push_back(s + "/image_raw");
     }
   }

@@ -42,7 +42,9 @@ target_include_directories(
     $<INSTALL_INTERFACE:include>)
 
 ament_target_dependencies(approx_reconstruction
-    event_array_codecs event_array_msgs sensor_msgs image_transport)
+  rclcpp rclcpp_components
+  event_array_codecs event_array_msgs sensor_msgs
+  image_transport)
 # need to link this target separately or else it won't find the header files
 target_link_libraries(approx_reconstruction simple_image_recon_lib::simple_image_recon_lib)
 
@@ -60,7 +62,10 @@ target_link_libraries(approx_reconstruction_node approx_reconstruction)
 add_executable(bag_to_frames src/bag_to_frames_ros2.cpp)
 target_include_directories(bag_to_frames PUBLIC include)
 ament_target_dependencies(bag_to_frames
-  event_array_codecs event_array_msgs rosbag2_cpp sensor_msgs)
+  rclcpp rclcpp_components
+  event_array_codecs event_array_msgs sensor_msgs
+  rosbag2_cpp)
+
 target_link_libraries(bag_to_frames simple_image_recon_lib::simple_image_recon_lib)
 
 

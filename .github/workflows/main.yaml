@@ -44,7 +44,7 @@ jobs:
   build_jammy_humble:
     runs-on: ubuntu-22.04
     container:
-      image: berndpfrommer/jammy_humble_spinnaker
+      image: berndpfrommer/jammy_humble
     name: jammy/humble (x86_64)
     steps:
       - name: check out github repo

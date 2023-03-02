@@ -33,7 +33,7 @@ def launch_setup(context, *args, **kwargs):
                 parameters=[
                     {'fps': LaunchConfig('fps'),
                      'cutoff_num_events': LaunchConfig('cutoff_num_events'),
-                     'fill_ratio': 0.5,
+                     'fill_ratio': 0.6,
                      'tile_size': 2}],
                 remappings=[('~/events', LaunchConfig('topic'))])
     return [node]
@@ -46,7 +46,7 @@ def generate_launch_description():
                   description='camera'),
         LaunchArg('fps', default_value='25.0',
                   description='frame rate'),
-        LaunchArg('cutoff_num_events', default_value='7',
+        LaunchArg('cutoff_num_events', default_value='30',
                   description='number of events for temporal filter'),
         LaunchArg('topic', default_value='events',
                   description='topic for events'),

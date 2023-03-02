@@ -1,5 +1,5 @@
 # -*- cmake -*-
-# Copyright 2022 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+# Copyright 2023 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,10 +26,15 @@ find_package(event_array_msgs REQUIRED)
 find_package(event_array_codecs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(rosbag2_cpp REQUIRED)
+
+set(CMAKE_CXX_STANDARD 17)
+
 #
 # --------- library
 #
-add_library(approx_reconstruction src/approx_reconstruction_ros2.cpp)
+add_library(approx_reconstruction
+  src/approx_reconstruction_ros2.cpp)
 target_include_directories(
     approx_reconstruction
   PUBLIC
@@ -49,11 +54,22 @@ rclcpp_components_register_nodes(approx_reconstruction "simple_image_recon::Appr
 add_executable(approx_reconstruction_node src/node_ros2.cpp)
 target_link_libraries(approx_reconstruction_node approx_reconstruction)
 
-# the node must go into the paroject specific lib directory or else
+#
+# -------- bag_to_frames
+#
+add_executable(bag_to_frames src/bag_to_frames_ros2.cpp)
+target_include_directories(bag_to_frames PUBLIC include)
+ament_target_dependencies(bag_to_frames
+  event_array_codecs event_array_msgs rosbag2_cpp sensor_msgs)
+target_link_libraries(bag_to_frames simple_image_recon_lib::simple_image_recon_lib)
+
+
+# the nodes must go into the paroject specific lib directory or else
 # the launch file will not find it
 
 install(TARGETS
   approx_reconstruction_node
+  bag_to_frames
   DESTINATION lib/${PROJECT_NAME}/)
 
 # the shared library goes into the global lib dir so it can

@@ -1,5 +1,5 @@
 // -*-c++-*---------------------------------------------------------------------------------------
-// Copyright 2022 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+// Copyright 2023 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,71 +27,42 @@
 #include <simple_image_recon_lib/simple_image_reconstructor.hpp>
 #include <string>
 
+#include "simple_image_recon/approx_reconstructor.hpp"
+#include "simple_image_recon/frame_handler.hpp"
+
 namespace simple_image_recon
 {
-class ApproxReconstruction : public event_array_codecs::EventProcessor
+class ApproxReconstruction
+: public simple_image_recon::FrameHandler<sensor_msgs::Image::ConstPtr>
 {
 public:
   using EventArray = event_array_msgs::EventArray;
   explicit ApproxReconstruction(ros::NodeHandle & nh);
   ~ApproxReconstruction();
 
-  // ---------- inherited from EventProcessor
-  inline void eventCD(
-    uint64_t t, uint16_t ex, uint16_t ey, uint8_t polarity) override
+  void frame(
+    const sensor_msgs::Image::ConstPtr & img, const std::string &) override
   {
-    simpleReconstructor_.event(t, ex, ey, polarity);
-    while (t > nextFrameTime_) {
-      publishFrame();
-      nextFrameTime_ += sliceInterval_;
-    }
+    imagePub_.publish(std::move(img));
   }
-  void eventExtTrigger(uint64_t, uint8_t, uint8_t) override {}
-  void finished() override{};
-  void rawData(const char *, size_t) override{};
-  // --------- end of inherited from EventProcessor
 
 private:
-  // special handling for first message
-  class FirstMsgProcessor : public event_array_codecs::EventProcessor
-  {
-    // ---------- inherited from EventProcessor
-  public:
-    void eventCD(uint64_t t, uint16_t, uint16_t, uint8_t) override
-    {
-      if (firstTimeStamp_ == 0) {
-        firstTimeStamp_ = t;
-      }
-    }
-    void eventExtTrigger(uint64_t, uint8_t, uint8_t) override {}
-    void finished() override{};
-    void rawData(const char *, size_t) override{};
-    // --------- end of inherited from EventProcessor
-    uint64_t getFirstTimeStamp() const { return (firstTimeStamp_); }
-    // --------- variables -----------
-  private:
-    uint64_t firstTimeStamp_{0};
-  };
-
   void publishFrame();
-  void eventMsg(const EventArray::ConstPtr & msg);
+  void eventMsg(const EventArray::ConstPtr & msg)
+  {
+    reconstructor_->processMsg(msg);
+  }
   void imageConnectCallback(const image_transport::SingleSubscriberPublisher &);
 
   // ------------------------  variables ------------------------------
+  using ApproxRecon = ApproxReconstructor<
+    EventArray, EventArray::ConstPtr, sensor_msgs::Image,
+    sensor_msgs::Image::ConstPtr>;
   ros::NodeHandle nh_;
-  double sliceTime_;  // duration of one frame
   ros::Subscriber eventSub_;
   bool isSubscribedToEvents_{false};
   image_transport::Publisher imagePub_;
-  sensor_msgs::Image imageMsgTemplate_;
-  int cutoffNumEvents_{7};
-  uint64_t sliceInterval_{0};
-  uint64_t nextFrameTime_{0};
-  int tileSize_{2};
-  double fillRatio_{0.5};
-  event_array_codecs::Decoder<ApproxReconstruction> * decoder_{0};
-  event_array_codecs::DecoderFactory<ApproxReconstruction> decoderFactory_;
-  simple_image_recon_lib::SimpleImageReconstructor simpleReconstructor_;
+  std::unique_ptr<ApproxRecon> reconstructor_;
 };
 }  // namespace simple_image_recon
 #endif  // SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTION_ROS1_HPP_

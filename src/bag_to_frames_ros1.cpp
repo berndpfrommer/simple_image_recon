@@ -33,7 +33,8 @@ using ApproxRecon = simple_image_recon::ApproxReconstructor<
 void usage()
 {
   std::cout << "usage:" << std::endl;
-  std::cout << "bag_to_frames -i input_bag -o output_bag [-t input_topic] "
+  std::cout << "bag_to_frames -i input_bag -o output_bag "
+               "[-O time_offset_sec] [-t input_topic] "
                "[-T output_topic] [-f fps] [-c cutoff_period]"
             << std::endl;
 }
@@ -69,14 +70,18 @@ int main(int argc, char ** argv)
   std::vector<std::string> inTopics;
   std::vector<std::string> outTopics;
   int cutoff_period(30);
+  std::vector<uint64_t> offsets;
   double fps(25);
-  while ((opt = getopt(argc, argv, "i:o:t:T:f:c:h")) != -1) {
+  while ((opt = getopt(argc, argv, "i:o:O:t:T:f:c:h")) != -1) {
     switch (opt) {
       case 'i':
         inBagName = optarg;
         break;
       case 'o':
         outBagName = optarg;
+        break;
+      case 'O':
+        offsets.push_back(static_cast<uint64_t>(std::abs(atof(optarg)) * 1e9));
         break;
       case 't':
         inTopics.push_back(std::string(optarg));
@@ -123,6 +128,11 @@ int main(int argc, char ** argv)
       outTopics.push_back(s + "/image_raw");
     }
   }
+
+  while (offsets.size() < inTopics.size()) {
+    offsets.push_back(0);
+  }
+
   if (outTopics.size() != inTopics.size()) {
     std::cout << "must have same number of input and output topics!"
               << std::endl;
@@ -140,9 +150,9 @@ int main(int argc, char ** argv)
   std::unordered_map<std::string, ApproxRecon> recons;
   for (size_t i = 0; i < inTopics.size(); i++) {
     recons.insert(
-      {inTopics[i],
-       ApproxRecon(
-         &writer, outTopics[i], cutoff_period, fps, fillRatio, tileSize)});
+      {inTopics[i], ApproxRecon(
+                      &writer, outTopics[i], cutoff_period, fps, fillRatio,
+                      tileSize, offsets[i])});
   }
 
   rosbag::Bag inBag;

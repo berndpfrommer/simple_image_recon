@@ -38,12 +38,13 @@ public:
   explicit ApproxReconstructor(
     FrameHandler<ImageConstPtrT> * fh, const std::string & topic,
     int cutoffNumEvents = 30, double fps = 25.0, double fillRatio = 0.6,
-    int tileSize = 2)
+    int tileSize = 2, uint64_t offset = 0)
   : frameHandler_(fh),
     topic_(topic),
     cutoffNumEvents_(cutoffNumEvents),
     fillRatio_(fillRatio),
-    tileSize_(tileSize)
+    tileSize_(tileSize),
+    timeOffset_(offset)
   {
     sliceInterval_ = static_cast<uint64_t>(1000000000 / std::abs(fps));
     imageMsgTemplate_.height = 0;
@@ -54,7 +55,7 @@ public:
     uint64_t t, uint16_t ex, uint16_t ey, uint8_t polarity) override
   {
     simpleReconstructor_.event(t, ex, ey, polarity);
-    while (t > nextFrameTime_) {
+    while (t + timeOffset_ > nextFrameTime_) {
       emitFrame();
       nextFrameTime_ += sliceInterval_;
     }
@@ -63,6 +64,8 @@ public:
   void finished() override{};
   void rawData(const char *, size_t) override{};
   // --------- end of inherited from EventProcessor
+
+  uint64_t getT0() const { return (t0_); }
 
   void processMsg(EventArrayConstSharedPtrT msg)
   {
@@ -73,15 +76,15 @@ public:
       imageMsgTemplate_.encoding = "mono8";
       imageMsgTemplate_.is_bigendian = check_endian::isBigEndian();
       imageMsgTemplate_.step = imageMsgTemplate_.width;
-      imageMsgTemplate_.data.resize(msg->width * msg->height, 0);
+      // imageMsgTemplate_.data.resize(msg->width * msg->height, 0);
       FirstMsgProcessor firstMsgProcessor;
       event_array_codecs::DecoderFactory<FirstMsgProcessor> firstFactory;
       auto firstDecoder =
         firstFactory.getInstance(msg->encoding, msg->width, msg->height);
       firstDecoder->decode(
         &(msg->events[0]), msg->events.size(), &firstMsgProcessor);
-      const uint64_t t0 = firstMsgProcessor.getFirstTimeStamp();
-      nextFrameTime_ = (t0 / sliceInterval_) * sliceInterval_;
+      t0_ = firstMsgProcessor.getFirstTimeStamp() + timeOffset_;
+      nextFrameTime_ = (t0_ / sliceInterval_) * sliceInterval_;
       simpleReconstructor_.initialize(
         msg->width, msg->height,
         static_cast<uint32_t>(std::abs(cutoffNumEvents_)), tileSize_,
@@ -120,10 +123,9 @@ private:
 
   void emitFrame()
   {
-    // TODO(Bernd) avoid unnecessary copy here
-    simpleReconstructor_.getImage(
-      &imageMsgTemplate_.data[0], imageMsgTemplate_.step);
     auto msg = std::make_unique<ImageT>(imageMsgTemplate_);
+    msg->data.resize(msg->height * msg->step);
+    simpleReconstructor_.getImage(&(msg->data[0]), msg->step);
 #ifdef USING_ROS_1
     ros::Time t;
     t.fromNSec(nextFrameTime_);
@@ -141,8 +143,10 @@ private:
   int cutoffNumEvents_{0};
   uint64_t sliceInterval_{0};
   uint64_t nextFrameTime_{0};
+  uint64_t t0_{0};
   double fillRatio_{0};
   int tileSize_{0};
+  uint64_t timeOffset_{0};
   event_array_codecs::Decoder<ApproxReconstructor> * decoder_{0};
   event_array_codecs::DecoderFactory<ApproxReconstructor> decoderFactory_;
   simple_image_recon_lib::SimpleImageReconstructor simpleReconstructor_;

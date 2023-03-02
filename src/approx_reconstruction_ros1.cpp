@@ -25,8 +25,10 @@ ApproxReconstruction::ApproxReconstruction(ros::NodeHandle & nh) : nh_(nh)
   const int cutoffNumEvents = nh_.param<int>("cutoff_num_events", 30);
   const double fillRatio = nh_.param<double>("fill_ratio", 0.6);
   const int tileSize = nh_.param<int>("tile_size", 2);
+  const double offset = nh_.param<double>("time_offset", 0);
   reconstructor_ = std::make_unique<ApproxRecon>(
-    this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize);
+    this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize,
+    static_cast<uint64_t>(std::abs(offset * 1e9)));
 
   image_transport::ImageTransport it(nh_);
   imagePub_ = it.advertise(

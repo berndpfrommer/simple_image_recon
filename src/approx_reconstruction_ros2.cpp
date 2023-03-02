@@ -39,9 +39,13 @@ ApproxReconstruction::ApproxReconstruction(const rclcpp::NodeOptions & options)
   int tileSize{2};
   this->get_parameter_or("tile_size", tileSize, 2);
   RCLCPP_INFO_STREAM(get_logger(), "tile size: " << tileSize);
+  double offset{2};
+  this->get_parameter_or("time_offset", offset, 0.0);
+  RCLCPP_INFO_STREAM(get_logger(), "time offset: " << offset);
 
   reconstructor_ = std::make_unique<ApproxRecon>(
-    this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize);
+    this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize,
+    static_cast<uint64_t>(std::abs(offset * 1e9)));
 
   const rmw_qos_profile_t qosProf = rmw_qos_profile_default;
   imagePub_ = image_transport::create_publisher(this, "~/image_raw", qosProf);

@@ -19,8 +19,6 @@
 #include <rclcpp_components/register_node_macro.hpp>
 #include <vector>
 
-#include "simple_image_recon/check_endian.hpp"
-
 namespace simple_image_recon
 {
 ApproxReconstruction::ApproxReconstruction(const rclcpp::NodeOptions & options)

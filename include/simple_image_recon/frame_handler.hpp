@@ -13,20 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SIMPLE_IMAGE_RECON__FRAME_HANDLER_ROS2_HPP_
-#define SIMPLE_IMAGE_RECON__FRAME_HANDLER_ROS2_HPP_
-
-#include <sensor_msgs/msg/image.hpp>
+#ifndef SIMPLE_IMAGE_RECON__FRAME_HANDLER_HPP_
+#define SIMPLE_IMAGE_RECON__FRAME_HANDLER_HPP_
 
 namespace simple_image_recon
 {
+template <typename ImageConstSharedPtrT>
 class FrameHandler
 {
 public:
   virtual void frame(
-    const sensor_msgs::msg::Image::ConstSharedPtr & img,
-    const std::string & topic) = 0;
+    const ImageConstSharedPtrT & img, const std::string & topic) = 0;
   virtual ~FrameHandler() {}
 };
 }  // namespace simple_image_recon
-#endif  // SIMPLE_IMAGE_RECON__FRAME_HANDLER_ROS2_HPP_
+#endif  // SIMPLE_IMAGE_RECON__FRAME_HANDLER_HPP_

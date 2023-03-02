@@ -14,6 +14,9 @@
 # limitations under the License.
 
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+add_definitions(-DUSING_ROS_1)
+
+set(CMAKE_CXX_STANDARD 17)
 
 # find dependencies
 find_package(simple_image_recon_lib)
@@ -21,6 +24,7 @@ find_package(simple_image_recon_lib)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   nodelet
+  rosbag
   event_array_msgs
   event_array_codecs
   sensor_msgs
@@ -34,7 +38,9 @@ include_directories(
 #
 # --------- library
 #
-add_library(approx_reconstruction src/approx_reconstruction_ros1.cpp)
+add_library(approx_reconstruction
+  src/approx_reconstruction_ros1.cpp)
+
 target_include_directories(
     approx_reconstruction
   PUBLIC
@@ -58,11 +64,21 @@ target_link_libraries(approx_reconstruction_nodelet approx_reconstruction ${ALL_
 add_executable(approx_reconstruction_node src/node_ros1.cpp)
 target_link_libraries(approx_reconstruction_node approx_reconstruction ${ALL_LIBS})
 
+#
+# -------- bag_to_frames
+#
+
+add_executable(bag_to_frames src/bag_to_frames_ros1.cpp)
+target_include_directories(bag_to_frames PUBLIC include)
+target_link_libraries(bag_to_frames approx_reconstruction ${ALL_LIBS})
+
+
 # the node must go into the paroject specific lib directory or else
 # the launch file will not find it
 
 install(TARGETS
   approx_reconstruction_node
+  bag_to_frames
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 # the shared library goes into the global lib dir so it can

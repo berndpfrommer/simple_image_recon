@@ -26,8 +26,8 @@
 #include <simple_image_recon_lib/simple_image_reconstructor.hpp>
 #include <string>
 
-#include "simple_image_recon/approx_reconstructor_ros2.hpp"
-#include "simple_image_recon/frame_handler_ros2.hpp"
+#include "simple_image_recon/approx_reconstructor.hpp"
+#include "simple_image_recon/frame_handler.hpp"
 
 namespace simple_image_recon
 {

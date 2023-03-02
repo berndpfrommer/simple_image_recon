@@ -17,19 +17,17 @@
 
 #include <vector>
 
-#include "simple_image_recon/check_endian.hpp"
-
 namespace simple_image_recon
 {
 ApproxReconstruction::ApproxReconstruction(ros::NodeHandle & nh) : nh_(nh)
 {
   const double fps = nh_.param<double>("fps", 25.0);
-  sliceInterval_ = static_cast<uint64_t>(1000000000 / std::abs(fps));
-  cutoffNumEvents_ = nh_.param<int>("cutoff_num_events", 30);
-  fillRatio_ = nh_.param<double>("fill_ratio", 0.6);
-  tileSize_ = nh_.param<int>("tile_size", 2);
+  const int cutoffNumEvents = nh_.param<int>("cutoff_num_events", 30);
+  const double fillRatio = nh_.param<double>("fill_ratio", 0.6);
+  const int tileSize = nh_.param<int>("tile_size", 2);
+  reconstructor_ = std::make_unique<ApproxRecon>(
+    this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize);
 
-  imageMsgTemplate_.height = 0;
   image_transport::ImageTransport it(nh_);
   imagePub_ = it.advertise(
     "image_raw", 1,
@@ -60,48 +58,6 @@ void ApproxReconstruction::imageConnectCallback(
       ROS_INFO_STREAM("unsubscribed from events!");
     }
   }
-}
-
-void ApproxReconstruction::eventMsg(const EventArray::ConstPtr & msg)
-{
-  if (imageMsgTemplate_.height == 0) {
-    imageMsgTemplate_.header = msg->header;
-    imageMsgTemplate_.width = msg->width;
-    imageMsgTemplate_.height = msg->height;
-    imageMsgTemplate_.encoding = "mono8";
-    imageMsgTemplate_.is_bigendian = check_endian::isBigEndian();
-    imageMsgTemplate_.step = imageMsgTemplate_.width;
-    imageMsgTemplate_.data.resize(msg->width * msg->height, 0);
-    FirstMsgProcessor firstMsgProcessor;
-    event_array_codecs::DecoderFactory<FirstMsgProcessor> firstFactory;
-    auto firstDecoder =
-      firstFactory.getInstance(msg->encoding, msg->width, msg->height);
-    firstDecoder->decode(
-      &(msg->events[0]), msg->events.size(), &firstMsgProcessor);
-    const uint64_t t0 = firstMsgProcessor.getFirstTimeStamp();
-    nextFrameTime_ = (t0 / sliceInterval_) * sliceInterval_;
-    simpleReconstructor_.initialize(
-      msg->width, msg->height,
-      static_cast<uint32_t>(std::abs(cutoffNumEvents_)), tileSize_, fillRatio_);
-    decoder_ =
-      decoderFactory_.getInstance(msg->encoding, msg->width, msg->height);
-    if (!decoder_) {
-      ROS_ERROR_STREAM("invalid encoding: " << msg->encoding);
-      throw std::runtime_error("invalid encoding!");
-    }
-  }
-  decoder_->decode(&(msg->events[0]), msg->events.size(), this);
-}
-
-void ApproxReconstruction::publishFrame()
-{
-  simpleReconstructor_.getImage(
-    &imageMsgTemplate_.data[0], imageMsgTemplate_.step);
-  auto msg = std::make_unique<sensor_msgs::Image>(imageMsgTemplate_);
-  ros::Time t;
-  t.fromNSec(nextFrameTime_);
-  msg->header.stamp = t;
-  imagePub_.publish(std::move(msg));
 }
 
 }  // namespace simple_image_recon

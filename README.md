@@ -13,18 +13,14 @@ Galactic. Continuous integration testing also for Ubuntu 22.04 under
 ROS2 Humble.
 
 ## How to build
-Create a workspace (``~/ws``), clone this repo, and use ``wstool``
-to pull in the remaining dependencies:
-
+Create a workspace (``~/ws``), clone this repo, and use ``vcs`` tool
 ```
 pkg=simple_image_recon
 mkdir -p ~/$pkg/src
-cd ~/ws
-git clone https://github.com/berndpfrommer/${pkg}.git src/${pkg}
-wstool init src src/${pkg}/${pkg}.rosinstall
-# to update an existing space:
-# wstool merge -t src src/${pkg}/${pkg}.rosinstall
-# wstool update -t src
+cd ~/ws/src
+git clone https://github.com/berndpfrommer/${pkg}.git
+vcs import < ${pkg}/${pkg}.repos
+cd ..
 ```
 
 ### configure and build on ROS1:

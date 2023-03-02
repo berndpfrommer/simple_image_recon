@@ -16,8 +16,8 @@ ROS2 Humble.
 Create a workspace (``~/ws``), clone this repo, and use ``vcs`` tool
 ```
 pkg=simple_image_recon
-mkdir -p ~/$pkg/src
-cd ~/ws/src
+mkdir -p ~/${pkg}/src
+cd ~/${pkg}/src
 git clone https://github.com/berndpfrommer/${pkg}.git
 vcs import < ${pkg}/${pkg}.repos
 cd ..

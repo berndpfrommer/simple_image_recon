@@ -14,6 +14,7 @@
 # limitations under the License.
 
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+add_definitions(-DROS_DISTRO=$ENV{ROS_DISTRO})
 
 # find dependencies
 find_package(ament_cmake REQUIRED)

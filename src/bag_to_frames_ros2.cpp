@@ -62,9 +62,14 @@ public:
     const sensor_msgs::msg::Image::ConstSharedPtr & img,
     const std::string & topic) override
   {
-    auto serialized_msg = std::make_shared<rclcpp::SerializedMessage>();
     rclcpp::Serialization<Image> serialization;
+#if (ROS_DISTRO == galactic) || (ROS_DISTRO == foxy)
+    rclcpp::SerializedMessage serialized_msg;
+    serialization.serialize_message(img.get(), &serialized_msg);
+#else
+    auto serialized_msg = std::make_shared<rclcpp::SerializedMessage>();
     serialization.serialize_message(img.get(), serialized_msg.get());
+#endif
     writer_->write(
       serialized_msg, topic, "sensor_msgs/msg/Image",
       rclcpp::Time(img->header.stamp));

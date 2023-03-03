@@ -63,7 +63,7 @@ public:
     const std::string & topic) override
   {
     rclcpp::Serialization<Image> serialization;
-#if (ROS_DISTRO == galactic) || (ROS_DISTRO == foxy)
+#ifdef USE_OLD_ROSBAG_API
     rclcpp::SerializedMessage serialized_msg;
     serialization.serialize_message(img.get(), &serialized_msg);
 #else

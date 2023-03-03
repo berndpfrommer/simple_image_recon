@@ -14,7 +14,16 @@
 # limitations under the License.
 
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-add_definitions(-DROS_DISTRO=$ENV{ROS_DISTRO})
+
+# the rosbag api changed between distros
+if(DEFINED ENV{ROS_DISTRO})
+  if ($ENV{ROS_DISTRO} STREQUAL "foxy" OR
+      $ENV{ROS_DISTRO} STREQUAL "galactic")
+    add_definitions(-DUSE_OLD_ROSBAG_API)
+  endif()
+else()
+  message(ERROR "ROS_DISTRO environment variable is not set!")
+endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)

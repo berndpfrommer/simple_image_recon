@@ -15,7 +15,7 @@
 
 #include "simple_image_recon/approx_reconstruction_ros2.hpp"
 
-#include <event_array_msgs/msg/event_array.hpp>
+#include <event_camera_msgs/msg/event_packet.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <vector>
 
@@ -75,10 +75,11 @@ void ApproxReconstruction::subscriptionCheckTimerExpired()
       auto qos = rclcpp::QoS(rclcpp::KeepLast(qsize))
                    .best_effort()
                    .durability_volatile();
-      eventSub_ = this->create_subscription<event_array_msgs::msg::EventArray>(
-        "~/events", qos,
-        std::bind(
-          &ApproxReconstruction::eventMsg, this, std::placeholders::_1));
+      eventSub_ =
+        this->create_subscription<event_camera_msgs::msg::EventPacket>(
+          "~/events", qos,
+          std::bind(
+            &ApproxReconstruction::eventMsg, this, std::placeholders::_1));
     }
   } else {
     // -------------- no subscribers -------------------

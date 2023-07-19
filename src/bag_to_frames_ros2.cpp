@@ -15,7 +15,7 @@
 
 #include <unistd.h>
 
-#include <event_array_msgs/msg/event_array.hpp>
+#include <event_camera_msgs/msg/event_packet.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -31,7 +31,7 @@
 #include "simple_image_recon/approx_reconstructor.hpp"
 #include "simple_image_recon/frame_handler.hpp"
 
-using event_array_msgs::msg::EventArray;
+using event_camera_msgs::msg::EventPacket;
 using sensor_msgs::msg::Image;
 
 void usage()
@@ -88,7 +88,7 @@ private:
 };
 
 using ApproxRecon = simple_image_recon::ApproxReconstructor<
-  EventArray, EventArray::ConstSharedPtr, Image, Image::ConstSharedPtr>;
+  EventPacket, EventPacket::ConstSharedPtr, Image, Image::ConstSharedPtr>;
 
 int main(int argc, char ** argv)
 {
@@ -185,14 +185,14 @@ int main(int argc, char ** argv)
 
   rosbag2_cpp::Reader reader;
   reader.open(inBagName);
-  rclcpp::Serialization<EventArray> serialization;
+  rclcpp::Serialization<EventPacket> serialization;
   size_t numMessages(0);
   while (reader.has_next()) {
     auto msg = reader.read_next();
     auto it = recons.find(msg->topic_name);
     if (it != recons.end()) {
       rclcpp::SerializedMessage serializedMsg(*msg->serialized_data);
-      std::shared_ptr<EventArray> m(new EventArray());
+      std::shared_ptr<EventPacket> m(new EventPacket());
       serialization.deserialize_message(&serializedMsg, m.get());
       it->second.processMsg(m);
       numMessages++;

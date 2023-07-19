@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <event_array_msgs/EventArray.h>
+#include <event_camera_msgs/EventPacket.h>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -25,10 +25,10 @@
 #include "simple_image_recon/approx_reconstructor.hpp"
 #include "simple_image_recon/frame_handler.hpp"
 
-using event_array_msgs::EventArray;
+using event_camera_msgs::EventPacket;
 using sensor_msgs::Image;
 using ApproxRecon = simple_image_recon::ApproxReconstructor<
-  EventArray, EventArray::ConstPtr, Image, Image::ConstPtr>;
+  EventPacket, EventPacket::ConstPtr, Image, Image::ConstPtr>;
 
 void usage()
 {
@@ -163,7 +163,7 @@ int main(int argc, char ** argv)
   for (const rosbag::MessageInstance & msg : view) {
     auto it = recons.find(msg.getTopic());
     if (it != recons.end()) {
-      auto m = msg.instantiate<EventArray>();
+      auto m = msg.instantiate<EventPacket>();
       it->second.processMsg(m);
       numMessages++;
     }

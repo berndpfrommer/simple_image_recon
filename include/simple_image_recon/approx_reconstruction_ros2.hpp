@@ -16,9 +16,9 @@
 #ifndef SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTION_ROS2_HPP_
 #define SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTION_ROS2_HPP_
 
-#include <event_array_codecs/decoder_factory.h>
+#include <event_camera_codecs/decoder_factory.h>
 
-#include <event_array_msgs/msg/event_array.hpp>
+#include <event_camera_msgs/msg/event_packet.hpp>
 #include <image_transport/image_transport.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -36,7 +36,7 @@ class ApproxReconstruction : public rclcpp::Node,
                                sensor_msgs::msg::Image::ConstSharedPtr>
 {
 public:
-  using EventArray = event_array_msgs::msg::EventArray;
+  using EventPacket = event_camera_msgs::msg::EventPacket;
   using Image = sensor_msgs::msg::Image;
   explicit ApproxReconstruction(const rclcpp::NodeOptions & options);
   ~ApproxReconstruction();
@@ -48,16 +48,16 @@ public:
 
 private:
   void subscriptionCheckTimerExpired();
-  void eventMsg(EventArray::ConstSharedPtr msg)
+  void eventMsg(EventPacket::ConstSharedPtr msg)
   {
     reconstructor_->processMsg(msg);
   }
   // ------------------------  variables ------------------------------
   using ApproxRecon = ApproxReconstructor<
-    EventArray, EventArray::ConstSharedPtr, Image, Image::ConstSharedPtr>;
+    EventPacket, EventPacket::ConstSharedPtr, Image, Image::ConstSharedPtr>;
 
   rclcpp::TimerBase::SharedPtr subscriptionCheckTimer_;
-  rclcpp::Subscription<EventArray>::SharedPtr eventSub_;
+  rclcpp::Subscription<EventPacket>::SharedPtr eventSub_;
   image_transport::Publisher imagePub_;
   std::unique_ptr<ApproxRecon> reconstructor_;
 };

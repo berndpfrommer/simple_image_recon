@@ -25,8 +25,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   nodelet
   rosbag
-  event_array_msgs
-  event_array_codecs
+  event_camera_msgs
+  event_camera_codecs
   sensor_msgs
   image_transport)
 

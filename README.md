@@ -2,7 +2,7 @@
 
 ROS/ROS2 package to perform simple image reconstruction for an event
 based camera. The node takes as input
-[event_array_msgs](https://github.com/berndpfrommer/event_array_msgs). The
+[event_camera_msgs](https://github.com/ros-event-camera/event_camera_msgs). The
 core logic of event reconstruction can be found in the
 [simple image recon library package](https://github.com/berndpfrommer/simple_image_recon_lib).
 
@@ -40,7 +40,7 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo  #
 ## How to use
 
 Launch the
-[event based camera driver](https://github.com/berndpfrommer/metavision_ros_driver) and
+[event based camera driver](https://github.com/ros-event-camera/metavision_driver) and
 start the reconstruction node:
 
 ROS1:

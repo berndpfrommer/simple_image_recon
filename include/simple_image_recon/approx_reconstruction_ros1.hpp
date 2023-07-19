@@ -16,9 +16,9 @@
 #ifndef SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTION_ROS1_HPP_
 #define SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTION_ROS1_HPP_
 
-#include <event_array_codecs/decoder_factory.h>
-#include <event_array_codecs/event_processor.h>
-#include <event_array_msgs/EventArray.h>
+#include <event_camera_codecs/decoder_factory.h>
+#include <event_camera_codecs/event_processor.h>
+#include <event_camera_msgs/EventPacket.h>
 #include <image_transport/image_transport.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
@@ -36,7 +36,7 @@ class ApproxReconstruction
 : public simple_image_recon::FrameHandler<sensor_msgs::Image::ConstPtr>
 {
 public:
-  using EventArray = event_array_msgs::EventArray;
+  using EventPacket = event_camera_msgs::EventPacket;
   explicit ApproxReconstruction(ros::NodeHandle & nh);
   ~ApproxReconstruction();
 
@@ -48,7 +48,7 @@ public:
 
 private:
   void publishFrame();
-  void eventMsg(const EventArray::ConstPtr & msg)
+  void eventMsg(const EventPacket::ConstPtr & msg)
   {
     reconstructor_->processMsg(msg);
   }
@@ -56,7 +56,7 @@ private:
 
   // ------------------------  variables ------------------------------
   using ApproxRecon = ApproxReconstructor<
-    EventArray, EventArray::ConstPtr, sensor_msgs::Image,
+    EventPacket, EventPacket::ConstPtr, sensor_msgs::Image,
     sensor_msgs::Image::ConstPtr>;
   ros::NodeHandle nh_;
   ros::Subscriber eventSub_;

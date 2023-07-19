@@ -16,8 +16,8 @@
 #ifndef SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTOR_HPP_
 #define SIMPLE_IMAGE_RECON__APPROX_RECONSTRUCTOR_HPP_
 
-#include <event_array_codecs/decoder_factory.h>
-#include <event_array_codecs/event_processor.h>
+#include <event_camera_codecs/decoder_factory.h>
+#include <event_camera_codecs/event_processor.h>
 
 #include <memory>
 #include <simple_image_recon_lib/simple_image_reconstructor.hpp>
@@ -29,12 +29,12 @@
 namespace simple_image_recon
 {
 template <
-  typename EventArrayT, typename EventArrayConstSharedPtrT, typename ImageT,
+  typename EventPacketT, typename EventPacketConstSharedPtrT, typename ImageT,
   typename ImageConstPtrT>
-class ApproxReconstructor : public event_array_codecs::EventProcessor
+class ApproxReconstructor : public event_camera_codecs::EventProcessor
 {
 public:
-  using EventArray = EventArrayT;
+  using EventPacket = EventPacketT;
   explicit ApproxReconstructor(
     FrameHandler<ImageConstPtrT> * fh, const std::string & topic,
     int cutoffNumEvents = 30, double fps = 25.0, double fillRatio = 0.6,
@@ -67,7 +67,7 @@ public:
 
   uint64_t getT0() const { return (t0_); }
 
-  void processMsg(EventArrayConstSharedPtrT msg)
+  void processMsg(EventPacketConstSharedPtrT msg)
   {
     if (imageMsgTemplate_.height == 0) {
       imageMsgTemplate_.header = msg->header;
@@ -78,30 +78,28 @@ public:
       imageMsgTemplate_.step = imageMsgTemplate_.width;
       // imageMsgTemplate_.data.resize(msg->width * msg->height, 0);
       FirstMsgProcessor firstMsgProcessor;
-      event_array_codecs::DecoderFactory<FirstMsgProcessor> firstFactory;
-      auto firstDecoder =
-        firstFactory.getInstance(msg->encoding, msg->width, msg->height);
-      firstDecoder->decode(
-        &(msg->events[0]), msg->events.size(), &firstMsgProcessor);
+      event_camera_codecs::DecoderFactory<EventPacket, FirstMsgProcessor>
+        firstFactory;
+      auto firstDecoder = firstFactory.getInstance(*msg);
+      firstDecoder->decode(*msg, &firstMsgProcessor);
       t0_ = firstMsgProcessor.getFirstTimeStamp() + timeOffset_;
       nextFrameTime_ = (t0_ / sliceInterval_) * sliceInterval_;
       simpleReconstructor_.initialize(
         msg->width, msg->height,
         static_cast<uint32_t>(std::abs(cutoffNumEvents_)), tileSize_,
         fillRatio_);
-      decoder_ =
-        decoderFactory_.getInstance(msg->encoding, msg->width, msg->height);
+      decoder_ = decoderFactory_.getInstance(*msg);
       if (!decoder_) {
         std::cerr << "invalid encoding: " << msg->encoding << std::endl;
         throw(std::runtime_error("invalid encoding!"));
       }
     }
-    decoder_->decode(&(msg->events[0]), msg->events.size(), this);
+    decoder_->decode(*msg, this);
   }
 
 private:
   // special handling for first message
-  class FirstMsgProcessor : public event_array_codecs::EventProcessor
+  class FirstMsgProcessor : public event_camera_codecs::EventProcessor
   {
     // ---------- inherited from EventProcessor
   public:
@@ -147,8 +145,9 @@ private:
   double fillRatio_{0};
   int tileSize_{0};
   uint64_t timeOffset_{0};
-  event_array_codecs::Decoder<ApproxReconstructor> * decoder_{0};
-  event_array_codecs::DecoderFactory<ApproxReconstructor> decoderFactory_;
+  event_camera_codecs::Decoder<EventPacketT, ApproxReconstructor> * decoder_{0};
+  event_camera_codecs::DecoderFactory<EventPacketT, ApproxReconstructor>
+    decoderFactory_;
   simple_image_recon_lib::SimpleImageReconstructor simpleReconstructor_;
 };
 }  // namespace simple_image_recon

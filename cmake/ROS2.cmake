@@ -32,8 +32,8 @@ find_package(simple_image_recon_lib REQUIRED)
 
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(event_array_msgs REQUIRED)
-find_package(event_array_codecs REQUIRED)
+find_package(event_camera_msgs REQUIRED)
+find_package(event_camera_codecs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
@@ -53,7 +53,7 @@ target_include_directories(
 
 ament_target_dependencies(approx_reconstruction
   rclcpp rclcpp_components
-  event_array_codecs event_array_msgs sensor_msgs
+  event_camera_codecs event_camera_msgs sensor_msgs
   image_transport)
 # need to link this target separately or else it won't find the header files
 target_link_libraries(approx_reconstruction simple_image_recon_lib::simple_image_recon_lib)
@@ -73,7 +73,7 @@ add_executable(bag_to_frames src/bag_to_frames_ros2.cpp)
 target_include_directories(bag_to_frames PUBLIC include)
 ament_target_dependencies(bag_to_frames
   rclcpp rclcpp_components
-  event_array_codecs event_array_msgs sensor_msgs
+  event_camera_codecs event_camera_msgs sensor_msgs
   rosbag2_cpp)
 
 target_link_libraries(bag_to_frames simple_image_recon_lib::simple_image_recon_lib)

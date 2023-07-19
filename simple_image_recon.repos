@@ -7,7 +7,7 @@ repositories:
     type: git
     url: https://github.com/ros-event-camera/event_camera_codecs.git
     version: master
-  simple_image_recon_lib:o
+  simple_image_recon_lib:
     type: git
     url: https://github.com/berndpfrommer/simple_image_recon_lib.git
     version: master

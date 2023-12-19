@@ -16,7 +16,7 @@
   <depend condition="$ROS_VERSION == 2">rosbag2_cpp</depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
-  <test_depend condition="$ROS_VERSION == 2">ament_black</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_black</test_depend>
 
 
   <!-- ROS1 dependencies -->

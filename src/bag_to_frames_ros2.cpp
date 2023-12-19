@@ -15,7 +15,9 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <event_camera_msgs/msg/event_packet.hpp>
+#include <iterator>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -27,9 +29,9 @@
 #include <rosbag2_cpp/writers/sequential_writer.hpp>
 #include <rosbag2_storage/serialized_bag_message.hpp>
 #include <sensor_msgs/msg/image.hpp>
-
-#include "simple_image_recon/approx_reconstructor.hpp"
-#include "simple_image_recon/frame_handler.hpp"
+#include <simple_image_recon/approx_reconstructor.hpp>
+#include <simple_image_recon/frame_handler.hpp>
+#include <vector>
 
 using event_camera_msgs::msg::EventPacket;
 using sensor_msgs::msg::Image;
@@ -38,7 +40,8 @@ void usage()
 {
   std::cout << "usage:" << std::endl;
   std::cout << "bag_to_frames -i input_bag -o output_bag "
-               "[-O time_offset_sec] [-t input_topic] "
+               "[-O time_offset_sec] [-r ros_pulse_time_nsec] "
+               "[-p pulse_time_nsec] [-t input_topic] "
                "[-T output_topic] [-f fps] [-c cutoff_period]"
             << std::endl;
 }
@@ -73,9 +76,6 @@ public:
     writer_->write(
       serialized_msg, topic, "sensor_msgs/msg/Image",
       rclcpp::Time(img->header.stamp));
-    // std::cout << topic << " "
-    // << rclcpp::Time(img->header.stamp).nanoseconds()
-    // << " " << (void *)(&(img->data[0])) << std::endl;
     numFrames_++;
     if (numFrames_ % 100 == 0) {
       std::cout << "wrote " << numFrames_ << " frames " << std::endl;
@@ -99,8 +99,10 @@ int main(int argc, char ** argv)
   std::vector<std::string> outTopics;
   int cutoff_period(30);
   std::vector<uint64_t> offsets;
+  std::vector<uint64_t> pulses;
+  std::vector<uint64_t> rosPulses;
   double fps(25);
-  while ((opt = getopt(argc, argv, "i:o:O:t:T:f:c:h")) != -1) {
+  while ((opt = getopt(argc, argv, "i:o:O:t:T:p:r:f:c:h")) != -1) {
     switch (opt) {
       case 'i':
         inBagName = optarg;
@@ -110,6 +112,12 @@ int main(int argc, char ** argv)
         break;
       case 'O':
         offsets.push_back(static_cast<uint64_t>(std::abs(atof(optarg)) * 1e9));
+        break;
+      case 'p':
+        pulses.push_back(static_cast<uint64_t>(atoll(optarg)));
+        break;
+      case 'r':
+        rosPulses.push_back(static_cast<uint64_t>(atoll(optarg)));
         break;
       case 't':
         inTopics.push_back(std::string(optarg));
@@ -128,7 +136,7 @@ int main(int argc, char ** argv)
         return (-1);
         break;
       default:
-        std::cout << "unknown option: " << opt << std::endl;
+        std::cout << "got unknown option!" << std::endl;
         usage();
         return (-1);
         break;
@@ -151,14 +159,40 @@ int main(int argc, char ** argv)
     std::cout << "no input topics found!" << std::endl;
     return (-1);
   }
+
   if (outTopics.empty()) {
     for (const auto & s : inTopics) {
       outTopics.push_back(s + "/image_raw");
     }
   }
 
+  if (!(offsets.empty() || pulses.empty())) {
+    std::cout << "can only specify offset or pulses!" << std::endl;
+    return (-1);
+  }
+
+  std::vector<uint64_t> rosOffsets;
+  if (offsets.empty()) {
+    if (rosPulses.size() != pulses.size()) {
+      std::cout << "missing ROS pulse times (option -r)!" << std::endl;
+      return (-1);
+    }
+    const auto ix = std::distance(
+      std::begin(pulses),
+      std::max_element(std::begin(pulses), std::end(pulses)));
+
+    for (size_t i = 0; i < pulses.size(); ++i) {
+      const auto & p = pulses[i];
+      offsets.push_back(pulses[ix] - p);  // will be added to sensor time
+      rosOffsets.push_back(rosPulses[ix]);
+    }
+  }
+
   while (offsets.size() < inTopics.size()) {
     offsets.push_back(0);
+  }
+  while (rosOffsets.size() < inTopics.size()) {
+    rosOffsets.push_back(0);
   }
 
   if (outTopics.size() != inTopics.size()) {
@@ -180,7 +214,7 @@ int main(int argc, char ** argv)
     recons.insert(
       {inTopics[i], ApproxRecon(
                       &writer, outTopics[i], cutoff_period, fps, fillRatio,
-                      tileSize, offsets[i])});
+                      tileSize, offsets[i], rosOffsets[i])});
   }
 
   rosbag2_cpp::Reader reader;

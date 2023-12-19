@@ -38,13 +38,14 @@ public:
   explicit ApproxReconstructor(
     FrameHandler<ImageConstPtrT> * fh, const std::string & topic,
     int cutoffNumEvents = 30, double fps = 25.0, double fillRatio = 0.6,
-    int tileSize = 2, uint64_t offset = 0)
+    int tileSize = 2, uint64_t offset = 0, uint64_t rosOffset = 0)
   : frameHandler_(fh),
     topic_(topic),
     cutoffNumEvents_(cutoffNumEvents),
     fillRatio_(fillRatio),
     tileSize_(tileSize),
-    timeOffset_(offset)
+    timeOffset_(offset),
+    rosOffset_(rosOffset)
   {
     sliceInterval_ = static_cast<uint64_t>(1000000000 / std::abs(fps));
     imageMsgTemplate_.height = 0;
@@ -80,7 +81,7 @@ public:
       FirstMsgProcessor firstMsgProcessor;
       event_camera_codecs::DecoderFactory<EventPacket, FirstMsgProcessor>
         firstFactory;
-      auto firstDecoder = firstFactory.getInstance(*msg);
+      auto firstDecoder = firstFactory.newInstance(*msg);
       firstDecoder->decode(*msg, &firstMsgProcessor);
       t0_ = firstMsgProcessor.getFirstTimeStamp() + timeOffset_;
       nextFrameTime_ = (t0_ / sliceInterval_) * sliceInterval_;
@@ -88,7 +89,7 @@ public:
         msg->width, msg->height,
         static_cast<uint32_t>(std::abs(cutoffNumEvents_)), tileSize_,
         fillRatio_);
-      decoder_ = decoderFactory_.getInstance(*msg);
+      decoder_ = decoderFactory_.newInstance(*msg);
       if (!decoder_) {
         std::cerr << "invalid encoding: " << msg->encoding << std::endl;
         throw(std::runtime_error("invalid encoding!"));
@@ -126,10 +127,11 @@ private:
     simpleReconstructor_.getImage(&(msg->data[0]), msg->step);
 #ifdef USING_ROS_1
     ros::Time t;
-    t.fromNSec(nextFrameTime_);
+    t.fromNSec(nextFrameTime_ + rosOffset_);
     msg->header.stamp = t;
 #else
-    msg->header.stamp = rclcpp::Time(nextFrameTime_, RCL_SYSTEM_TIME);
+    msg->header.stamp =
+      rclcpp::Time(nextFrameTime_ + rosOffset_, RCL_SYSTEM_TIME);
 #endif
     frameHandler_->frame(std::move(msg), topic_);
   }
@@ -145,7 +147,10 @@ private:
   double fillRatio_{0};
   int tileSize_{0};
   uint64_t timeOffset_{0};
-  event_camera_codecs::Decoder<EventPacketT, ApproxReconstructor> * decoder_{0};
+  uint64_t rosOffset_{0};
+  std::shared_ptr<
+    event_camera_codecs::Decoder<EventPacketT, ApproxReconstructor>>
+    decoder_;
   event_camera_codecs::DecoderFactory<EventPacketT, ApproxReconstructor>
     decoderFactory_;
   simple_image_recon_lib::SimpleImageReconstructor simpleReconstructor_;

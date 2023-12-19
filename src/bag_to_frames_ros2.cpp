@@ -56,8 +56,12 @@ public:
     writer_ = std::make_unique<rosbag2_cpp::Writer>();
     writer_->open(bagName);
     for (const auto & topic : outTopics) {
-      writer_->create_topic(
-        {topic, "sensor_msgs/msg/Image", rmw_get_serialization_format(), ""});
+      struct rosbag2_storage::TopicMetadata md;
+      md.name = topic;
+      md.type = "sensor_msgs/msg/Image";
+      md.serialization_format = rmw_get_serialization_format();
+      md.offered_qos_profiles = "";
+      writer_->create_topic(md);
     }
   }
 

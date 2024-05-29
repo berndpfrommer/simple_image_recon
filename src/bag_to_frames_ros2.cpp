@@ -60,7 +60,7 @@ public:
       md.name = topic;
       md.type = "sensor_msgs/msg/Image";
       md.serialization_format = rmw_get_serialization_format();
-      md.offered_qos_profiles = "";
+      // md.offered_qos_profiles = "";
       writer_->create_topic(md);
     }
   }

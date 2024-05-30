@@ -26,27 +26,27 @@ from launch_ros.descriptions import ComposableNode
 def launch_setup(context, *args, **kwargs):
     """Create composable node."""
     container = ComposableNodeContainer(
-        name="simple_image_recon_container",
-        namespace="",
-        package="rclcpp_components",
-        executable="component_container",
+        name='simple_image_recon_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
         composable_node_descriptions=[
             ComposableNode(
-                package="simple_image_recon",
-                plugin="simple_image_recon::ApproxReconstruction",
-                namespace=LaunchConfig("camera"),
+                package='simple_image_recon',
+                plugin='simple_image_recon::ApproxReconstruction',
+                namespace=LaunchConfig('camera'),
                 parameters=[
                     {
-                        "fps": LaunchConfig("fps"),
-                        "cutoff_num_events": LaunchConfig("cutoff_num_events"),
-                        "fill_ratio": 0.5,
-                        "tile_size": 2,
+                        'fps': LaunchConfig('fps'),
+                        'cutoff_num_events': LaunchConfig('cutoff_num_events'),
+                        'fill_ratio': 0.5,
+                        'tile_size': 2,
                     }
                 ],
-                remappings=[("~/events", LaunchConfig("topic"))],
+                remappings=[('~/events', LaunchConfig('topic'))],
             )
         ],
-        output="screen",
+        output='screen',
     )
     return [container]
 
@@ -55,14 +55,14 @@ def generate_launch_description():
     """Create composable node by calling opaque function."""
     return launch.LaunchDescription(
         [
-            LaunchArg("camera", default_value=["event_camera"], description="camera"),
-            LaunchArg("fps", default_value="25.0", description="frame rate"),
+            LaunchArg('camera', default_value=['event_camera'], description='camera'),
+            LaunchArg('fps', default_value='25.0', description='frame rate'),
             LaunchArg(
-                "cutoff_num_events",
-                default_value="30",
-                description="number of events for temporal filter",
+                'cutoff_num_events',
+                default_value='30',
+                description='number of events for temporal filter',
             ),
-            LaunchArg("topic", default_value="events", description="topic for events"),
+            LaunchArg('topic', default_value='events', description='topic for events'),
             OpaqueFunction(function=launch_setup),
         ]
     )

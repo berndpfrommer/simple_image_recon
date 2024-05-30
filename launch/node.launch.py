@@ -25,21 +25,21 @@ from launch_ros.actions import Node
 def launch_setup(context, *args, **kwargs):
     """Create simple node."""
     node = Node(
-        package="simple_image_recon",
-        executable="approx_reconstruction_node",
-        output="screen",
-        namespace=LaunchConfig("camera"),
+        package='simple_image_recon',
+        executable='approx_reconstruction_node',
+        output='screen',
+        namespace=LaunchConfig('camera'),
         # prefix=['xterm -e gdb -ex run --args'],
-        name="approx_reconstruction",
+        name='approx_reconstruction',
         parameters=[
             {
-                "fps": LaunchConfig("fps"),
-                "cutoff_num_events": LaunchConfig("cutoff_num_events"),
-                "fill_ratio": 0.6,
-                "tile_size": 2,
+                'fps': LaunchConfig('fps'),
+                'cutoff_num_events': LaunchConfig('cutoff_num_events'),
+                'fill_ratio': 0.6,
+                'tile_size': 2,
             }
         ],
-        remappings=[("~/events", LaunchConfig("topic"))],
+        remappings=[('~/events', LaunchConfig('topic'))],
     )
     return [node]
 
@@ -48,14 +48,14 @@ def generate_launch_description():
     """Create simple node by calling opaque function."""
     return launch.LaunchDescription(
         [
-            LaunchArg("camera", default_value=["event_camera"], description="camera"),
-            LaunchArg("fps", default_value="25.0", description="frame rate"),
+            LaunchArg('camera', default_value=['event_camera'], description='camera'),
+            LaunchArg('fps', default_value='25.0', description='frame rate'),
             LaunchArg(
-                "cutoff_num_events",
-                default_value="30",
-                description="number of events for temporal filter",
+                'cutoff_num_events',
+                default_value='30',
+                description='number of events for temporal filter',
             ),
-            LaunchArg("topic", default_value="events", description="topic for events"),
+            LaunchArg('topic', default_value='events', description='topic for events'),
             OpaqueFunction(function=launch_setup),
         ]
     )

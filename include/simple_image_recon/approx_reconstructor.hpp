@@ -62,8 +62,8 @@ public:
     }
   }
   void eventExtTrigger(uint64_t, uint8_t, uint8_t) override {}
-  void finished() override{};
-  void rawData(const char *, size_t) override{};
+  void finished() override {}
+  void rawData(const char *, size_t) override {}
   // --------- end of inherited from EventProcessor
 
   uint64_t getT0() const { return (t0_); }
@@ -111,8 +111,8 @@ private:
       }
     }
     void eventExtTrigger(uint64_t, uint8_t, uint8_t) override {}
-    void finished() override{};
-    void rawData(const char *, size_t) override{};
+    void finished() override {}
+    void rawData(const char *, size_t) override {}
     // --------- end of inherited from EventProcessor
     uint64_t getFirstTimeStamp() const { return (firstTimeStamp_); }
     // --------- variables -----------

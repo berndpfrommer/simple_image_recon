@@ -19,6 +19,8 @@
 #include <event_camera_msgs/msg/event_packet.hpp>
 #include <iterator>
 #include <memory>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/serialized_message.hpp>
@@ -32,22 +34,28 @@
 #include <simple_image_recon/approx_reconstructor.hpp>
 #include <simple_image_recon/frame_handler.hpp>
 #include <vector>
+#ifdef USE_CV_BRIDGE_HPP
+#include <cv_bridge/cv_bridge.hpp>
+#else
+#include <cv_bridge/cv_bridge.h>
+#endif
 
 using event_camera_msgs::msg::EventPacket;
 using sensor_msgs::msg::Image;
-
+using FrameHandler = simple_image_recon::FrameHandler<Image::ConstSharedPtr>;
 void usage()
 {
   std::cout << "usage:" << std::endl;
-  std::cout << "bag_to_frames -i input_bag -o output_bag "
+  std::cout << "bag_to_frames -i input_bag -o output_dir/bag -t input_topic "
                "[-O time_offset_sec] [-r ros_pulse_time_nsec] "
-               "[-p pulse_time_nsec] [-t input_topic] "
+               "[-p pulse_time_nsec] "
+               "[-b (write to bag)] "
+               "[-s tile_size] "
                "[-T output_topic] [-f fps] [-c cutoff_period]"
             << std::endl;
 }
 
-class OutBagWriter
-: public simple_image_recon::FrameHandler<Image::ConstSharedPtr>
+class OutBagWriter : public FrameHandler
 {
 public:
   explicit OutBagWriter(
@@ -64,7 +72,7 @@ public:
       writer_->create_topic(md);
     }
   }
-
+  virtual ~OutBagWriter(){};
   void frame(
     const sensor_msgs::msg::Image::ConstSharedPtr & img,
     const std::string & topic) override
@@ -91,14 +99,70 @@ private:
   size_t numFrames_{0};
 };
 
-using ApproxRecon = simple_image_recon::ApproxReconstructor<
-  EventPacket, EventPacket::ConstSharedPtr, Image, Image::ConstSharedPtr>;
+class FrameWriter : public FrameHandler
+{
+public:
+  struct FileInfo
+  {
+    FileInfo(const std::string & dir_name) : dir(dir_name) {}
+    std::string dir;
+    size_t counter{0};
+  };
+
+  explicit FrameWriter(
+    const std::string & base_name, const std::vector<std::string> & outTopics)
+  {
+    for (const auto & topic : outTopics) {
+      const std::string dir = base_name + topic;
+      dir_map_.insert({topic, FileInfo(dir)});
+      std::filesystem::create_directories(dir);  // does recursive...
+    }
+  }
+
+  void frame(
+    const sensor_msgs::msg::Image::ConstSharedPtr & img,
+    const std::string & topic) override
+  {
+    auto & file_info = dir_map_.find(topic)->second;
+    std::stringstream ss;
+    ss << std::setw(5) << std::setfill('0') << file_info.counter;
+    const auto fname = file_info.dir + "/frame_" + ss.str() + ".jpg";
+    auto cvImg = cv_bridge::toCvShare(img, "mono8");
+    cv::imwrite(fname, cvImg->image);
+    file_info.counter++;
+    numFrames_++;
+    if (numFrames_ % 100 == 0) {
+      std::cout << "wrote " << numFrames_ << " frames " << std::endl;
+    }
+  }
+
+private:
+  std::map<std::string, FileInfo> dir_map_;
+  size_t numFrames_{0};
+};
+
+struct ApproxRecon
+{
+  ApproxRecon(
+    simple_image_recon::FrameHandler<Image::ConstSharedPtr> * fh,
+    const std::string & topic, int cutoff_period = 30, double fps = 25.0,
+    double fillRatio = 0.6, int tileSize = 2, uint64_t offset = 0,
+    uint64_t rosOffset = 0)
+  : recon(fh, topic, cutoff_period, fps, fillRatio, tileSize, offset, rosOffset)
+  {
+  }
+  using Recon = simple_image_recon::ApproxReconstructor<
+    EventPacket, EventPacket::ConstSharedPtr, Image, Image::ConstSharedPtr>;
+  Recon recon;
+  uint32_t width{0};
+  uint32_t height{0};
+};
 
 int main(int argc, char ** argv)
 {
   int opt;
   std::string inBagName;
-  std::string outBagName;
+  std::string outName;
   std::vector<std::string> inTopics;
   std::vector<std::string> outTopics;
   int cutoff_period(30);
@@ -106,13 +170,21 @@ int main(int argc, char ** argv)
   std::vector<uint64_t> pulses;
   std::vector<uint64_t> rosPulses;
   double fps(25);
-  while ((opt = getopt(argc, argv, "i:o:O:t:T:p:r:f:c:h")) != -1) {
+  int tileSize = 2;
+  bool writeBag(false);
+  while ((opt = getopt(argc, argv, "i:o:O:t:T:p:r:s:f:c:hb")) != -1) {
     switch (opt) {
       case 'i':
         inBagName = optarg;
         break;
       case 'o':
-        outBagName = optarg;
+        outName = optarg;
+        break;
+      case 'b':
+        writeBag = true;
+        break;
+      case 's':
+        tileSize = atoi(optarg);
         break;
       case 'O':
         offsets.push_back(static_cast<uint64_t>(std::abs(atof(optarg)) * 1e9));
@@ -153,8 +225,8 @@ int main(int argc, char ** argv)
     return (-1);
   }
 
-  if (outBagName.empty()) {
-    std::cout << "missing output bag file name!" << std::endl;
+  if (outName.empty()) {
+    std::cout << "missing output bag / dir file name!" << std::endl;
     usage();
     return (-1);
   }
@@ -211,13 +283,15 @@ int main(int argc, char ** argv)
   }
 
   const double fillRatio = 0.6;
-  const int tileSize = 2;
-  OutBagWriter writer(outBagName, outTopics);
   std::unordered_map<std::string, ApproxRecon> recons;
+  std::unique_ptr<FrameHandler> fh(
+    writeBag
+      ? dynamic_cast<FrameHandler *>(new OutBagWriter(outName, outTopics))
+      : dynamic_cast<FrameHandler *>(new FrameWriter(outName, outTopics)));
   for (size_t i = 0; i < inTopics.size(); i++) {
     recons.insert(
       {inTopics[i], ApproxRecon(
-                      &writer, outTopics[i], cutoff_period, fps, fillRatio,
+                      fh.get(), outTopics[i], cutoff_period, fps, fillRatio,
                       tileSize, offsets[i], rosOffsets[i])});
   }
 
@@ -232,13 +306,38 @@ int main(int argc, char ** argv)
       rclcpp::SerializedMessage serializedMsg(*msg->serialized_data);
       std::shared_ptr<EventPacket> m(new EventPacket());
       serialization.deserialize_message(&serializedMsg, m.get());
-      it->second.processMsg(m);
+      if (numMessages == 0) {
+        it->second.width = m->width;
+        it->second.height = m->height;
+      }
+      it->second.recon.processMsg(m);
       numMessages++;
     }
+#if 0    
+    std::cout << it->second.recon.getTotalWindowSize() /
+                   static_cast<double>(it->second.recon.getNumMessages())
+              << std::endl;
+#endif
   }
   for (const auto & me : recons) {
-    std::cout << "first time (adjusted) " << me.first << " "
-              << me.second.getT0() << std::endl;
+    const auto & recon = me.second.recon;
+    const auto n = recon.getNumEvents();
+    const auto usecs = recon.getTimeElapsed();
+    const auto n_msgs = static_cast<double>(recon.getNumMessages());
+    std::cout << "topic:  " << me.first << std::endl;
+    std::cout << "resolution: " << me.second.width << " x " << me.second.height
+              << std::endl;
+    std::cout << "events: " << n << std::endl;
+    const double r = (usecs != 0) ? n / static_cast<double>(usecs) : -1.0;
+    std::cout << "reconstruction rate: " << r << " Mevs" << std::endl;
+    std::cout << "time per event: " << usecs * 1000.0 / static_cast<double>(n)
+              << "ns" << std::endl;
+    std::cout << "first time (adjusted): " << recon.getT0() << std::endl;
+
+    std::cout << "average window size: "
+              << recon.getTotalWindowSize() / (n_msgs != 0 ? n_msgs : 1.0)
+              << std::endl;
+    ;
   }
   std::cout << "processed " << numMessages << " number of messages"
             << std::endl;

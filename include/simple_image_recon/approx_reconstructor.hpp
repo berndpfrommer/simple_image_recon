@@ -19,6 +19,7 @@
 #include <event_camera_codecs/decoder_factory.h>
 #include <event_camera_codecs/event_processor.h>
 
+#include <chrono>
 #include <memory>
 #include <simple_image_recon_lib/simple_image_reconstructor.hpp>
 #include <string>
@@ -60,6 +61,7 @@ public:
       emitFrame();
       nextFrameTime_ += sliceInterval_;
     }
+    numEvents_++;
   }
   void eventExtTrigger(uint64_t, uint8_t, uint8_t) override {}
   void finished() override {}
@@ -67,6 +69,10 @@ public:
   // --------- end of inherited from EventProcessor
 
   uint64_t getT0() const { return (t0_); }
+  const auto & getNumEvents() const { return (numEvents_); }
+  const auto & getTimeElapsed() const { return (timeElapsed_); }
+  const auto & getTotalWindowSize() const { return (totalQueueSize_); }
+  const auto & getNumMessages() const { return (numMessages_); }
 
   void processMsg(EventPacketConstSharedPtrT msg)
   {
@@ -95,7 +101,14 @@ public:
         throw(std::runtime_error("invalid encoding!"));
       }
     }
+    const auto start = std::chrono::high_resolution_clock::now();
     decoder_->decode(*msg, this);
+    const decltype(start) final = std::chrono::high_resolution_clock::now();
+    timeElapsed_ +=
+      std::chrono::duration_cast<std::chrono::microseconds>(final - start)
+        .count();
+    totalQueueSize_ += simpleReconstructor_.getQueueSize();
+    numMessages_++;
   }
 
 private:
@@ -148,6 +161,10 @@ private:
   int tileSize_{0};
   uint64_t timeOffset_{0};
   uint64_t rosOffset_{0};
+  uint64_t numEvents_{0};
+  uint64_t timeElapsed_{0};  // in usec
+  uint64_t totalQueueSize_{0};
+  uint64_t numMessages_{0};
   std::shared_ptr<
     event_camera_codecs::Decoder<EventPacketT, ApproxReconstructor>>
     decoder_;

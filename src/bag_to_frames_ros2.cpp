@@ -126,7 +126,7 @@ public:
     auto & file_info = dir_map_.find(topic)->second;
     std::stringstream ss;
     ss << std::setw(5) << std::setfill('0') << file_info.counter;
-    const auto fname = file_info.dir + "/frame_" + ss.str() + ".jpg";
+    const auto fname = file_info.dir + "/frame_" + ss.str() + ".png";
     auto cvImg = cv_bridge::toCvShare(img, "mono8");
     cv::imwrite(fname, cvImg->image);
     file_info.counter++;

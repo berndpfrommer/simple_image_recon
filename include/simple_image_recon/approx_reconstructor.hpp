@@ -94,7 +94,7 @@ public:
       simpleReconstructor_.initialize(
         msg->width, msg->height,
         static_cast<uint32_t>(std::abs(cutoffNumEvents_)), tileSize_,
-        fillRatio_);
+        fillRatio_, 1280, 720, 0.01);
       decoder_ = decoderFactory_.newInstance(*msg);
       if (!decoder_) {
         std::cerr << "invalid encoding: " << msg->encoding << std::endl;

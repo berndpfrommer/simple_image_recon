@@ -46,9 +46,14 @@ ApproxReconstruction::ApproxReconstruction(const rclcpp::NodeOptions & options)
   reconstructor_ = std::make_unique<ApproxRecon>(
     this, std::string("unused"), cutoffNumEvents, fps, fillRatio, tileSize,
     static_cast<uint64_t>(std::abs(offset * 1e9)));
-
-  const rmw_qos_profile_t qosProf = rmw_qos_profile_default;
-  imagePub_ = image_transport::create_publisher(this, "~/image_raw", qosProf);
+#ifdef IMAGE_TRANSPORT_USE_QOS
+  const rclcpp::QoS qos(
+    rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default),
+    rmw_qos_profile_default);
+#else
+  const auto qos = rmw_qos_profile_default;
+#endif
+  imagePub_ = image_transport::create_publisher(this, "~/image_raw", qos);
   // Since the ROS2 image transport does not call back when subscribers come and go
   // must check by polling
   subscriptionCheckTimer_ = rclcpp::create_timer(

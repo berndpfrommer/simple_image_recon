@@ -40,6 +40,14 @@ find_package(rosbag2_cpp REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 
+if(${rclcpp_VERSION} VERSION_GREATER_EQUAL "28.0.0")
+  add_definitions(-DUSE_MATCHED_EVENTS)
+endif()
+
+if(${image_transport_VERSION} VERSION_GREATER_EQUAL "6.3.0")
+  add_definitions(-DIMAGE_TRANSPORT_USE_QOS)
+endif()
+
 #
 # --------- library
 #
@@ -50,13 +58,14 @@ target_include_directories(
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
-
-ament_target_dependencies(approx_reconstruction
-  rclcpp rclcpp_components
-  event_camera_codecs event_camera_msgs sensor_msgs
-  image_transport)
-# need to link this target separately or else it won't find the header files
-target_link_libraries(approx_reconstruction simple_image_recon_lib::simple_image_recon_lib)
+target_link_libraries(approx_reconstruction
+  rclcpp::rclcpp
+  rclcpp_components::component
+  ${event_camera_codecs_TARGETS}
+  ${event_camera_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
+  image_transport::image_transport
+  simple_image_recon_lib::simple_image_recon_lib)
 
 rclcpp_components_register_nodes(approx_reconstruction "simple_image_recon::ApproxReconstruction")
 
@@ -71,12 +80,13 @@ target_link_libraries(approx_reconstruction_node approx_reconstruction)
 #
 add_executable(bag_to_frames src/bag_to_frames_ros2.cpp)
 target_include_directories(bag_to_frames PUBLIC include)
-ament_target_dependencies(bag_to_frames
-  rclcpp rclcpp_components
-  event_camera_codecs event_camera_msgs sensor_msgs
-  rosbag2_cpp)
-
-target_link_libraries(bag_to_frames simple_image_recon_lib::simple_image_recon_lib)
+target_link_libraries(bag_to_frames
+  rclcpp::rclcpp
+  ${event_camera_codecs_TARGETS}
+  ${event_camera_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
+  rosbag2_cpp::rosbag2_cpp
+  simple_image_recon_lib::simple_image_recon_lib)
 
 
 # the nodes must go into the paroject specific lib directory or else
